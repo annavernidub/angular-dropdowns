@@ -1,51 +1,56 @@
+uid = 0;
 angular.module('ngDropdowns', [])
 .directive('dropdownSelect', ['$document', ($document) ->
     return {
-        restrict: 'A'
-        replace: true
-        scope:
-            dropdownSelect: '='
-            dropdownModel: '='
-            dropdownOnchange: '&'
+    restrict: 'A'
+    replace: true
+    scope:
+        dropdownSelect: '='
+        dropdownModel: '='
+        dropdownOnchange: '&'
 
-        controller: ['$scope', '$element', '$attrs', ($scope, $element, $attrs) ->
+    controller: ['$scope', '$element', '$attrs', ($scope, $element, $attrs) ->
 
-            $scope.labelField = if $attrs.dropdownItemLabel? then $attrs.dropdownItemLabel else 'text'
+        $scope.labelField = if $attrs.dropdownItemLabel? then $attrs.dropdownItemLabel else 'text'
 
-            this.select = (selected) ->
-                if selected != $scope.dropdownModel
-                    angular.copy(selected, $scope.dropdownModel)
-                $scope.dropdownOnchange({ selected: selected })
-                return
-
-            body = $document.find("body")
-            body.bind("click", () ->
-                $element.removeClass('active')
-                return
-            )
-
-            $element.bind('click', (event) ->
-                event.stopPropagation()
-                $element.toggleClass('active')
-                return
-            )
-
+        $element._uid = uid++
+        this.select = (selected) ->
+            angular.copy(selected, $scope.dropdownModel)
+            $scope.dropdownOnchange({ selected: selected })
             return
-        ]
 
-        template:
-            """
-            <div class='wrap-dd-select'>
-                <span class='selected'>{{dropdownModel[labelField]}}</span>
-                <ul class='dropdown'>
-                    <li ng-repeat='item in dropdownSelect'
-                        class='dropdown-item'
-                        dropdown-select-item='item'
-                        dropdown-item-label='labelField'>
-                    </li>
-                </ul>
-            </div>
-            """
+        body = $document.find("body")
+        body.bind("click", () ->
+            $element.removeClass('active')
+            return
+        ).bind('ngDropdowns:closeAll', (event, uid) ->
+            if $element._uid isnt uid
+                $element.removeClass('active')
+        )
+
+        $element.bind('click', (event) ->
+            event.stopPropagation()
+            $element.toggleClass('active')
+            body.trigger('ngDropdowns:closeAll', $element._uid)
+            return
+        )
+
+        return
+    ]
+
+    template:
+        """
+        <div class='wrap-dd-select'>
+            <span class='selected'>{{dropdownModel[labelField]}}</span>
+            <ul class='dropdown'>
+                <li ng-repeat='item in dropdownSelect'
+                    class='dropdown-item'
+                    dropdown-select-item='item'
+                    dropdown-item-label='labelField'>
+                </li>
+            </ul>
+        </div>
+        """
     }
 ])
 .directive('dropdownSelectItem', [() ->
@@ -61,7 +66,7 @@ angular.module('ngDropdowns', [])
             scope.selectItem = () ->
                 return if scope.dropdownSelectItem.href
                 dropdownSelectCtrl.select scope.dropdownSelectItem
-                return
+            return
 
             return
 
@@ -116,8 +121,7 @@ angular.module('ngDropdowns', [])
             $wrap.append(tpl)
 
             this.select = (selected) ->
-                if selected != $scope.dropdownModel
-                    angular.copy(selected, $scope.dropdownModel)
+                angular.copy(selected, $scope.dropdownModel)
                 $scope.dropdownOnchange({ selected: selected })
                 return
 
@@ -139,7 +143,7 @@ angular.module('ngDropdowns', [])
 ])
 .directive('dropdownMenuItem', [() ->
     return {
-        require: '^dropdownMenu'
+    require: '^dropdownMenu'
         replace: true
         scope:
             dropdownMenuItem: '='
